@@ -15,6 +15,16 @@
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <Title>Penumbra.String</Title>
+        <Authors>Ottermandias</Authors>
+        <RepositoryUrl>https://github.com/Ottermandias/Penumbra.String</RepositoryUrl>
+        <Description>Auxiliary functions for dealing with owned or unowned byte strings when working with Final Fantasy XIV.</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    </PropertyGroup>
+
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugType>full</DebugType>
         <DefineConstants>DEBUG;TRACE</DefineConstants>
