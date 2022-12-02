@@ -139,6 +139,34 @@ public sealed unsafe partial class ByteString
     }
 
     /// <summary>
+    /// Join a number of strings with a given byte between them.
+    /// </summary>
+    /// <param name="splitter">The byte to insert between all strings.</param>
+    /// <param name="strings">The list of strings to join.</param>
+    /// <remarks>No <paramref name="splitter"/> is inserted before the first or after the last string.</remarks>
+    public static ByteString Join(params ByteString[] strings)
+    {
+        var length = strings.Sum(s => s.Length);
+        var data   = (byte*)Marshal.AllocHGlobal(length + 1);
+
+        var   ptr     = data;
+        bool? isLower = true;
+        bool? isAscii = true;
+        foreach (var s in strings)
+        {
+            MemoryUtility.MemCpyUnchecked(ptr, s.Path, s.Length);
+            ptr     += s.Length;
+            isLower =  Combine(isLower, s.IsAsciiLowerInternal);
+            isAscii &= s.IsAscii;
+        }
+
+        data[length ] = 0;
+        var ret = FromByteStringUnsafe(data, length, true, isLower, isAscii);
+        ret._length |= OwnedFlag;
+        return ret;
+    }
+
+    /// <summary>
     /// Split a string and return a list of the substrings delimited by b.
     /// </summary>
     /// <param name="b"></param>
