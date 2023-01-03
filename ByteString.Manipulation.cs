@@ -62,6 +62,9 @@ public sealed unsafe partial class ByteString
     /// <summary> Create an owned copy of the given string. </summary>
     public ByteString Clone()
     {
+        if (IsEmpty)
+            return Empty;
+
         var ret = new ByteString();
         ret._length = _length | OwnedFlag | NullTerminatedFlag;
         ret._path   = ByteStringFunctions.CopyString(Path, Length);
@@ -160,7 +163,7 @@ public sealed unsafe partial class ByteString
             isAscii &= s.IsAscii;
         }
 
-        data[length ] = 0;
+        data[length] = 0;
         var ret = FromByteStringUnsafe(data, length, true, isLower, isAscii);
         ret._length |= OwnedFlag;
         return ret;
