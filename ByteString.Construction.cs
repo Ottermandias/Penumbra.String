@@ -37,8 +37,17 @@ public sealed unsafe partial class ByteString : IDisposable
     /// <remarks> This computes CRC, checks for ASCII and AsciiLower and assumes Null-Termination. </remarks>
     public ByteString(byte* path)
     {
-        var length = ByteStringFunctions.ComputeCrc32AsciiLowerAndSize(path, out var crc32, out var lower, out var ascii);
-        Setup(path, length, crc32, true, false, lower, ascii);
+        if (path == null)
+        {
+            _path   =  Null.NullBytePtr;
+            _length |= AsciiCheckedFlag | AsciiFlag | AsciiLowerCheckedFlag | AsciiLowerFlag | NullTerminatedFlag | AsciiFlag;
+            _crc32  =  0;
+        }
+        else
+        {
+            var length = ByteStringFunctions.ComputeCrc32AsciiLowerAndSize(path, out var crc32, out var lower, out var ascii);
+            Setup(path, length, crc32, true, false, lower, ascii);
+        }
     }
 
     /// <summary>
