@@ -144,9 +144,7 @@ public sealed unsafe partial class ByteString
     /// <summary>
     /// Join a number of strings with a given byte between them.
     /// </summary>
-    /// <param name="splitter">The byte to insert between all strings.</param>
     /// <param name="strings">The list of strings to join.</param>
-    /// <remarks>No <paramref name="splitter"/> is inserted before the first or after the last string.</remarks>
     public static ByteString Join(params ByteString[] strings)
     {
         var length = strings.Sum(s => s.Length);
