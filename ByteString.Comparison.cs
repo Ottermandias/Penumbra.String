@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using Penumbra.String.Functions;
 
 namespace Penumbra.String;
@@ -15,8 +16,12 @@ public sealed unsafe partial class ByteString : IEquatable<ByteString>, ICompara
         if (ReferenceEquals(this, other))
             return true;
 
-        return _crc32 == other._crc32 && ByteStringFunctions.Equals(_path, Length, other._path, other.Length);
+        return EqualsInternal(other);
     }
+
+    /// <returns>Whether this string and the object <paramref name="obj"/> are equal. </returns>
+    public override bool Equals(object? obj)
+        => ReferenceEquals(this, obj) || obj is ByteString other && EqualsInternal(other);
 
     /// <param name="other">The string to compare with.</param>
     /// <returns>Whether this string and <paramref name="other"/> are equal ignoring (ASCII) case.</returns>
@@ -29,7 +34,7 @@ public sealed unsafe partial class ByteString : IEquatable<ByteString>, ICompara
             return true;
 
         if ((IsAsciiLowerInternal ?? false) && (other.IsAsciiLowerInternal ?? false))
-            return _crc32 == other._crc32 && ByteStringFunctions.Equals(_path, Length, other._path, other.Length);
+            return EqualsInternal(other);
 
         return ByteStringFunctions.AsciiCaselessEquals(_path, Length, other._path, other.Length);
     }
@@ -134,4 +139,17 @@ public sealed unsafe partial class ByteString : IEquatable<ByteString>, ICompara
 
         return -1;
     }
+
+    /// <returns>Whether two strings are equal.</returns>
+    public static bool operator ==(ByteString lhs, ByteString? rhs)
+        => lhs.Equals(rhs);
+
+    /// <returns>Whether two strings are different.</returns>
+    public static bool operator !=(ByteString lhs, ByteString rhs)
+        => !lhs.Equals(rhs);
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private bool EqualsInternal(ByteString other)
+        => _crc32 == other._crc32 && ByteStringFunctions.Equals(_path, Length, other._path, other.Length);
 }

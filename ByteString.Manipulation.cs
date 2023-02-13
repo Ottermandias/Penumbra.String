@@ -13,12 +13,16 @@ public sealed unsafe partial class ByteString
     /// Create a C# UTF16 string from this string.
     /// </summary>
     public override string ToString()
-        => Length == 0
-            ? string.Empty
-            : (_length & AsciiFlag) != 0
-                // If the string is known to be pure ASCII, use that encoding, otherwise UTF8.
-                ? Encoding.ASCII.GetString(_path, Length)
-                : Encoding.UTF8.GetString(_path, Length);
+    {
+        if (Length == 0)
+            return string.Empty;
+
+        // If the string is known to be pure ASCII, use that encoding, otherwise UTF8.
+        if ((_length & AsciiFlag) != 0)
+            return Encoding.ASCII.GetString(_path, Length);
+
+        return Encoding.UTF8.GetString(_path, Length);
+    }
 
 
     /// <summary> Convert the ASCII portion of the string to lowercase. </summary>

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.String.Functions;
@@ -14,8 +15,13 @@ namespace Penumbra.String.Classes;
 [JsonConverter(typeof(FullPathConverter))]
 public readonly struct FullPath : IComparable, IEquatable<FullPath>
 {
+    /// <summary> The Unicode string containing the full name of the path with backward-slashes. </summary>
     public readonly string     FullName;
+
+    /// <summary> The UTF8 string containing the full name of the path with forward-slashes. </summary>
     public readonly ByteString InternalName;
+
+    /// <summary> The FFXIV specific Crc64 value, i.e. a CRC32 of the file name combined with a CRC32 of the file path. </summary>
     public readonly ulong      Crc64;
 
     /// <summary> An empty string. </summary>
@@ -28,26 +34,20 @@ public readonly struct FullPath : IComparable, IEquatable<FullPath>
         : this(Path.Combine(baseDir.FullName, relPath.ToString()))
     { }
 
-    /// <summary>
-    /// Create a full path from a given file path.
-    /// </summary>
+    /// <summary> Create a full path from a given file path. </summary>
     public FullPath(FileInfo file)
         : this(file.FullName)
     { }
 
-    /// <summary>
-    /// Create a full path from a given string.
-    /// </summary>
+    /// <summary> Create a full path from a given string. </summary>
     public FullPath(string s)
     {
-        FullName     = s;
-        InternalName = ByteString.FromString(FullName.Replace('\\', '/'), out var name, true) ? name : ByteString.Empty;
+        FullName     = s.Replace('/', '\\');
+        InternalName = ByteString.FromString(s.Replace('\\', '/'), out var name, true) ? name : ByteString.Empty;
         Crc64        = ByteStringFunctions.ComputeCrc64(InternalName.Span);
     }
 
-    /// <summary>
-    /// Create a full path from a given game path. 
-    /// </summary>
+    /// <summary> Create a full path from a given game path.  </summary>
     public FullPath(Utf8GamePath path)
     {
         FullName     = path.ToString().Replace('/', '\\');
@@ -55,27 +55,19 @@ public readonly struct FullPath : IComparable, IEquatable<FullPath>
         Crc64        = ByteStringFunctions.ComputeCrc64(InternalName.Span);
     }
 
-    /// <summary>
-    /// Check whether the file exists on your file system.
-    /// </summary>
+    /// <summary> Check whether the file exists on your file system. </summary>
     public bool Exists
         => File.Exists(FullName);
 
-    /// <summary>
-    /// Get the file extension of the file.
-    /// </summary>
+    /// <summary> Get the file extension of the file. </summary>
     public string Extension
         => Path.GetExtension(FullName);
 
-    /// <summary>
-    /// Get only the file name of the file.
-    /// </summary>
+    /// <summary> Get only the file name of the file. </summary>
     public string Name
         => Path.GetFileName(FullName);
 
-    /// <summary>
-    /// Use the given directory path to obtain a game path.
-    /// </summary>
+    /// <summary> Use the given directory path to obtain a game path. </summary>
     public bool ToGamePath(DirectoryInfo dir, out Utf8GamePath path)
     {
         path = Utf8GamePath.Empty;
@@ -88,25 +80,22 @@ public readonly struct FullPath : IComparable, IEquatable<FullPath>
         return true;
     }
 
-    /// <summary>
-    /// Use the given directory path to obtain path relative to it.
-    /// </summary>
+    /// <summary> Use the given directory path to obtain path relative to it. </summary>
     public bool ToRelPath(DirectoryInfo dir, out Utf8RelPath path)
     {
         path = Utf8RelPath.Empty;
         if (!FullName.StartsWith(dir.FullName))
             return false;
 
-        var substring = InternalName.Substring(dir.FullName.Length + 1);
+        var dirLength = Encoding.UTF8.GetByteCount(dir.FullName);
+        var substring = InternalName.Substring(dirLength + 1);
 
         path = new Utf8RelPath(substring.Replace((byte)'/', (byte)'\\'));
         return true;
     }
 
-    /// <summary>
-    /// Compare lexicographically against another FullPath, FileInfo, ByteString or string.
-    /// </summary>
-    /// <remarks>Comparison against FileInfo and string ignore case, comparisons against FullPath and ByteString do not, but use the InternalName. </remarks>
+    /// <summary> Compare lexicographically against another FullPath, FileInfo, ByteString or string. </summary>
+    /// <remarks> Comparison against FileInfo and string ignore case, comparisons against FullPath and ByteString do not, but use the InternalName. </remarks>
     public int CompareTo(object? obj)
         => obj switch
         {
@@ -117,9 +106,7 @@ public readonly struct FullPath : IComparable, IEquatable<FullPath>
             _            => -1,
         };
 
-    /// <summary>
-    /// Check if two FullPaths are equal.
-    /// </summary>
+    /// <summary> Check if two FullPaths are equal. </summary>
     public bool Equals(FullPath other)
     {
         if (Crc64 != other.Crc64)
@@ -131,28 +118,22 @@ public readonly struct FullPath : IComparable, IEquatable<FullPath>
         return InternalName.Equals(other.InternalName);
     }
 
-    /// <summary>
-    /// Returns whether the path is rooted.
-    /// </summary>
+    /// <summary> Returns whether the path is rooted. </summary>
     public bool IsRooted
         => new Utf8GamePath(InternalName).IsRooted();
 
-    /// <summary>
-    /// Return the CRC32 of the InternalName.
-    /// </summary>
+    /// <summary> Return the CRC32 of the InternalName. </summary>
     public override int GetHashCode()
         => InternalName.Crc32;
 
-    /// <summary>
-    /// Return the FullName.
-    /// </summary>
+    /// <summary> Return the FullName. </summary>
     public override string ToString()
         => FullName;
 
     /// <summary>
     /// Convert from and to string.
     /// </summary>
-    public class FullPathConverter : JsonConverter
+    private class FullPathConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
             => objectType == typeof(FullPath);

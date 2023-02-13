@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Penumbra.String.Functions;
 
+/// <summary> Wrapper class for all utility functions. </summary>
 public static unsafe partial class ByteStringFunctions
 {
     /// <summary>

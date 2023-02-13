@@ -7,11 +7,11 @@ namespace Penumbra.String.Functions;
 public static unsafe partial class ByteStringFunctions
 {
     /// <summary> Used for static null-terminators. </summary>
-    public class NullTerminator
+    internal class NullTerminator
     {
         public readonly byte* NullBytePtr;
 
-        public NullTerminator()
+        internal NullTerminator()
         {
             NullBytePtr  = (byte*)Marshal.AllocHGlobal(1);
             *NullBytePtr = 0;

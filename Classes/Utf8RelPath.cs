@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using ByteStringFunctions = Penumbra.String.Functions.ByteStringFunctions;
+using Penumbra.String.Functions;
 
 namespace Penumbra.String.Classes;
 
@@ -13,21 +13,17 @@ namespace Penumbra.String.Classes;
 [JsonConverter(typeof(Utf8RelPathConverter))]
 public readonly struct Utf8RelPath : IEquatable<Utf8RelPath>, IComparable<Utf8RelPath>, IDisposable
 {
-    public const int MaxRelPathLength = 250;
+    /// <inheritdoc cref="Utf8GamePath.MaxGamePathLength"/>
+    public const int MaxRelPathLength = Utf8GamePath.MaxGamePathLength;
 
-    public readonly        ByteString  Path;
+    /// <inheritdoc cref="Utf8GamePath.Path"/>
+    public readonly ByteString Path;
+
+    /// <inheritdoc cref="Utf8GamePath.Empty"/>
     public static readonly Utf8RelPath Empty = new(ByteString.Empty);
 
     internal Utf8RelPath(ByteString path)
         => Path = path;
-
-    public static explicit operator Utf8RelPath(string s)
-    {
-        if (!FromString(s, out var p))
-            return Empty;
-
-        return new Utf8RelPath(p.Path.AsciiToLower());
-    }
 
     /// <inheritdoc cref="Utf8GamePath.FromString"/>
     public static bool FromString(string? s, out Utf8RelPath path)
@@ -94,26 +90,31 @@ public readonly struct Utf8RelPath : IEquatable<Utf8RelPath>, IComparable<Utf8Re
         }
 
         var length = Path.Length - idx;
-        var ptr    = ByteStringFunctions.CopyString(Path.Path + idx, length);
+        var ptr = ByteStringFunctions.CopyString(Path.Path + idx, length);
         ByteStringFunctions.Replace(ptr, length, (byte)'\\', (byte)'/');
         ByteStringFunctions.AsciiToLowerInPlace(ptr, length);
         var utf = new ByteString().Setup(ptr, length, null, true, true, true, true);
         return new Utf8GamePath(utf);
     }
 
+    /// <inheritdoc cref="ByteString.CompareTo"/>
     public int CompareTo(Utf8RelPath rhs)
         => Path.CompareTo(rhs.Path);
 
+    /// <inheritdoc cref="ByteString.Equals(ByteString?)"/>
     public bool Equals(Utf8RelPath other)
         => Path.Equals(other.Path);
 
+    /// <inheritdoc cref="ByteString.ToString"/>
     public override string ToString()
         => Path.ToString();
 
+    /// <inheritdoc cref="ByteString.Dispose"/>
     public void Dispose()
         => Path.Dispose();
 
-    public class Utf8RelPathConverter : JsonConverter
+    /// <inheritdoc cref="Utf8GamePath.Utf8GamePathConverter"/>
+    private class Utf8RelPathConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
             => objectType == typeof(Utf8RelPath);

@@ -83,7 +83,6 @@ public sealed unsafe partial class ByteString : IEnumerable<byte>
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
-
     // Only not readonly due to dispose.
     // ReSharper disable once NonReadonlyMemberInGetHashCode
     /// <returns>The CRC32 hash of the string.</returns>

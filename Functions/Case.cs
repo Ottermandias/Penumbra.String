@@ -5,11 +5,11 @@ namespace Penumbra.String.Functions;
 public static unsafe partial class ByteStringFunctions
 {
     private static readonly byte[] AsciiLowerCaseBytes = Enumerable.Range(0, 256)
-        .Select(i => (byte)char.ToLowerInvariant((char)i))
+        .Select(i => i < 0x80 ? (byte)char.ToLowerInvariant((char)i) : (byte) i)
         .ToArray();
 
     private static readonly byte[] AsciiUpperCaseBytes = Enumerable.Range(0, 256)
-        .Select(i => (byte)char.ToUpperInvariant((char)i))
+        .Select(i => i < 0x80 ? (byte)char.ToUpperInvariant((char)i) : (byte) i)
         .ToArray();
 
     /// <summary>
