@@ -39,7 +39,7 @@ public readonly struct Utf8RelPath : IEquatable<Utf8RelPath>, IComparable<Utf8Re
         if (substring.Length == 0)
             return true;
 
-        if (!ByteString.FromString(substring, out var ascii, true) || !ascii.IsAscii)
+        if (!ByteString.FromString(substring, out var ascii, true))
             return false;
 
         path = new Utf8RelPath(ascii);
