@@ -16,7 +16,7 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
     /// <summary>
     /// The maximum length Penumbra accepts.
     /// </summary>
-    public const int MaxGamePathLength = 2 << 12;
+    public const int MaxGamePathLength = 2 << 10;
 
     /// <summary>
     /// Return the original path.
