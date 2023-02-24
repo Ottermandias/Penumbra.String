@@ -130,6 +130,10 @@ public readonly struct FullPath : IComparable, IEquatable<FullPath>
     public override string ToString()
         => FullName;
 
+    /// <summary> Return the path with back slashes if it is rooted and with forward-slashes if not. </summary>
+    public string ToPath()
+        => IsRooted ? FullName : FullName.Replace("\\", "/");
+
     /// <summary>
     /// Convert from and to string.
     /// </summary>
