@@ -102,6 +102,50 @@ public sealed unsafe partial class ByteString
             : Substring(from);
     }
 
+    /// <summary> Trim all ascii whitespace characters from the front. </summary>
+    public ByteString TrimFront()
+    {
+        if (IsEmpty)
+            return Empty;
+
+        var ptr = _path;
+        var end = _path + Length;
+        while (*ptr < 0x7F && char.IsWhiteSpace((char)*ptr) && ptr++ < end)
+        { }
+
+        if (ptr == _path)
+            return this;
+
+        if (ptr == end)
+            return Empty;
+
+        return FromByteStringUnsafe(ptr, (int)(end - ptr), IsNullTerminated, IsAsciiLowerInternal, IsAsciiInternal);
+    }
+
+    /// <summary> Trim all ascii whitespace characters at the end. </summary>
+    public ByteString TrimEnd()
+    {
+        if (IsEmpty)
+            return Empty;
+
+        var ptr = _path + Length - 1;
+        var end = _path;
+        while (*ptr < 0x7F && char.IsWhiteSpace((char)*ptr) && ptr-- >= end)
+        { }
+
+        if (ptr == _path + Length - 1)
+            return this;
+
+        if (ptr < end)
+            return Empty;
+
+        return FromByteStringUnsafe(_path, (int)(ptr - _path), false, IsAsciiLowerInternal, IsAsciiInternal);
+    }
+
+    /// <summary> Trim all ascii whitespace characters from the beginning or end of the string. </summary>
+    public ByteString Trim()
+        => TrimFront().TrimEnd();
+
     /// <summary>
     /// Create a owned copy of the string and replace all occurrences of from with to in it.
     /// </summary>
