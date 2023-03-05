@@ -25,6 +25,15 @@ public readonly struct Utf8RelPath : IEquatable<Utf8RelPath>, IComparable<Utf8Re
     internal Utf8RelPath(ByteString path)
         => Path = path;
 
+    /// <summary> Explicit conversion from string to Utf8RelPath for migrating old dictionaries. </summary>
+    public static explicit operator Utf8RelPath(string s)
+    {
+        if (!FromString(s, out var p))
+            return Empty;
+
+        return new Utf8RelPath(p.Path.AsciiToLower());
+    }
+
     /// <inheritdoc cref="Utf8GamePath.FromString"/>
     public static bool FromString(string? s, out Utf8RelPath path)
     {
