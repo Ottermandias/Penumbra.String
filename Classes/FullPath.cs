@@ -71,7 +71,7 @@ public readonly struct FullPath : IComparable, IEquatable<FullPath>
     public bool ToGamePath(DirectoryInfo dir, out Utf8GamePath path)
     {
         path = Utf8GamePath.Empty;
-        if (!InternalName.IsAscii || !FullName.StartsWith(dir.FullName))
+        if (!FullName.StartsWith(dir.FullName))
             return false;
 
         var substring = InternalName.Substring(dir.FullName.Length + 1);
