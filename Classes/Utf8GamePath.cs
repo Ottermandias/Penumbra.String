@@ -95,7 +95,7 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
     /// <param name="s">The given string.</param>
     /// <param name="path">The converted path or an empty path on failure.</param>
     /// <param name="toLower">Whether the string should be (ASCII) lower-cased.</param>
-    /// <returns>False if the string is too long, can not be converted to UTF8 or is not fully ASCII.</returns>
+    /// <returns>False if the string is too long, or can not be converted to UTF8.</returns>
     public static bool FromString(string? s, out Utf8GamePath path, bool toLower = false)
     {
         path = Empty;
@@ -112,7 +112,33 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
         if (!ByteString.FromString(substring, out var ascii, toLower))
             return false;
 
+        var a = new int[5,5];
         path = new Utf8GamePath(ascii);
+        return true;
+    }
+
+    /// <summary>
+    /// Create a new path from a string and check its length.
+    /// </summary>
+    /// <param name="s">The given string.</param>
+    /// <param name="path">The string as UTF8GamePath, empty string on failure or null input.</param>
+    /// <param name="toLower">Whether the string should be (ASCII) lower-cased.</param>
+    /// <returns>False if the string is too long.</returns>
+    public static bool FromByteString(ByteString? s, out Utf8GamePath path, bool toLower = false)
+    {
+        if (s is null)
+        {
+            path = Empty;
+            return true;
+        }
+
+        if (s.Length > MaxGamePathLength)
+        {
+            path = Empty;
+            return false;
+        }
+
+        path = new Utf8GamePath(toLower ? s.AsciiToLower() : s);
         return true;
     }
 
