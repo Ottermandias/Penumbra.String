@@ -102,7 +102,7 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
         if (string.IsNullOrEmpty(s))
             return true;
 
-        var substring = s.Replace('\\', '/').TrimStart('/');
+        var substring = s.Replace('\\', '/').TrimStart('/').Trim();
         if (substring.Length > MaxGamePathLength)
             return false;
 

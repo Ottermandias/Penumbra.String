@@ -42,8 +42,8 @@ public readonly struct FullPath : IComparable, IEquatable<FullPath>
     /// <summary> Create a full path from a given string. </summary>
     public FullPath(string s)
     {
-        FullName     = s.Replace('/', '\\');
-        InternalName = ByteString.FromString(s.Replace('\\', '/'), out var name, true) ? name : ByteString.Empty;
+        FullName     = s.Replace('/', '\\').Trim();
+        InternalName = ByteString.FromString(FullName.Replace('\\', '/'), out var name, true) ? name : ByteString.Empty;
         Crc64        = ByteStringFunctions.ComputeCrc64(InternalName.Span);
     }
 
