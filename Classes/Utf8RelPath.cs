@@ -41,7 +41,7 @@ public readonly struct Utf8RelPath : IEquatable<Utf8RelPath>, IComparable<Utf8Re
         if (string.IsNullOrEmpty(s))
             return true;
 
-        var substring = s.Replace('/', '\\').TrimStart('\\').Trim();
+        var substring = s.Replace('/', '\\').TrimStart('\\').TrimEnd();
         if (substring.Length > MaxRelPathLength)
             return false;
 
