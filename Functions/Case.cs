@@ -1,5 +1,3 @@
-using System.Linq;
-
 namespace Penumbra.String.Functions;
 
 public static unsafe partial class ByteStringFunctions

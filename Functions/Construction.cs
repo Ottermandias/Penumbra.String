@@ -1,7 +1,3 @@
-using System;
-using System.Runtime.InteropServices;
-using System.Text;
-
 namespace Penumbra.String.Functions;
 
 public static unsafe partial class ByteStringFunctions

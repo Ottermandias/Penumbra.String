@@ -1,5 +1,3 @@
-using System;
-using System.Runtime.CompilerServices;
 using Penumbra.String.Functions;
 
 namespace Penumbra.String;
