@@ -97,7 +97,7 @@ public readonly struct Utf8RelPath : IEquatable<Utf8RelPath>, IComparable<Utf8Re
         }
 
         var length = Path.Length - idx;
-        var ptr = ByteStringFunctions.CopyString(Path.Path + idx, length);
+        var ptr    = ByteStringFunctions.CopyString(Path.Path + idx, length);
         ByteStringFunctions.Replace(ptr, length, (byte)'\\', (byte)'/');
         ByteStringFunctions.AsciiToLowerInPlace(ptr, length);
         var utf = new ByteString().Setup(ptr, length, null, true, true, true, true);
