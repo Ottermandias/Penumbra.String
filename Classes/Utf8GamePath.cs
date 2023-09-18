@@ -110,7 +110,7 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
         if (!ByteString.FromString(substring, out var ascii, toLower))
             return false;
 
-        var a = new int[5,5];
+        var a = new int[5, 5];
         path = new Utf8GamePath(ascii);
         return true;
     }

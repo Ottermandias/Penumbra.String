@@ -13,13 +13,13 @@ namespace Penumbra.String.Classes;
 public readonly struct FullPath : IComparable, IEquatable<FullPath>
 {
     /// <summary> The Unicode string containing the full name of the path with backward-slashes. </summary>
-    public readonly string     FullName;
+    public readonly string FullName;
 
     /// <summary> The UTF8 string containing the full name of the path with forward-slashes. </summary>
     public readonly ByteString InternalName;
 
     /// <summary> The FFXIV specific Crc64 value, i.e. a CRC32 of the file name combined with a CRC32 of the file path. </summary>
-    public readonly ulong      Crc64;
+    public readonly ulong Crc64;
 
     /// <summary> An empty string. </summary>
     public static readonly FullPath Empty = new(string.Empty);
