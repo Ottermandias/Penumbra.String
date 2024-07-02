@@ -47,6 +47,17 @@ public sealed unsafe partial class ByteString : IDisposable
         }
     }
 
+    /// <summary> Create a temporary ByteString from a byte span. </summary>
+    /// <param name="path">A null-terminated span of an existing string.</param>
+    /// <remarks>
+    /// This computes CRC, checks for ASCII and AsciiLower and assumes Null-Termination.
+    /// It does not care for the length of the span.
+    /// </remarks>
+    public ByteString(Span<byte> path)
+        : this(path.Length == 0 ? null : (byte*) Unsafe.AsPointer(ref path[0]))
+    { }
+
+
     /// <summary>
     /// Construct a temporary ByteString from a given byte string of known size. 
     /// </summary>
@@ -120,7 +131,7 @@ public sealed unsafe partial class ByteString : IDisposable
         if (!IsOwned)
             return;
 
-        Marshal.FreeHGlobal((IntPtr)_path);
+        Marshal.FreeHGlobal((nint)_path);
         GC.RemoveMemoryPressure(Length + 1);
         _length = AsciiCheckedFlag | AsciiFlag | AsciiLowerCheckedFlag | AsciiLowerFlag | NullTerminatedFlag;
         _path   = Null.NullBytePtr;

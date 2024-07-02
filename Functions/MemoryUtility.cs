@@ -6,7 +6,7 @@ namespace Penumbra.String.Functions;
 public static class MemoryUtility
 {
     [DllImport("msvcrt.dll", EntryPoint = "memcpy", CallingConvention = CallingConvention.Cdecl, SetLastError = false)]
-    private static extern unsafe IntPtr memcpy(void* dest, void* src, int count);
+    private static extern unsafe nint memcpy(void* dest, void* src, int count);
 
     /// <summary> Copies <paramref name="count"/> bytes from <paramref name="src"/> to <paramref name="dest"/>. </summary>
     /// <remarks>Call memcpy from msvcrt.dll.</remarks>

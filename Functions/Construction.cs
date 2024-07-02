@@ -14,7 +14,7 @@ public static unsafe partial class ByteStringFunctions
         }
 
         ~NullTerminator()
-            => Marshal.FreeHGlobal((IntPtr)NullBytePtr);
+            => Marshal.FreeHGlobal((nint)NullBytePtr);
     }
 
     /// <summary>
