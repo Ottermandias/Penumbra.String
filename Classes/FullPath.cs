@@ -10,16 +10,20 @@ namespace Penumbra.String.Classes;
 /// Also stores the FFXIV-CRC64 value.
 /// </summary>
 [JsonConverter(typeof(FullPathConverter))]
-public readonly struct FullPath : IComparable, IEquatable<FullPath>
+public struct FullPath : IComparable, IEquatable<FullPath>
 {
     /// <summary> The Unicode string containing the full name of the path with backward-slashes. </summary>
     public readonly string FullName;
 
     /// <summary> The UTF8 string containing the full name of the path with forward-slashes. </summary>
-    public readonly ByteString InternalName;
+    public readonly CiByteString InternalName;
+
+    private ulong _crc64;
 
     /// <summary> The FFXIV specific Crc64 value, i.e. a CRC32 of the file name combined with a CRC32 of the file path. </summary>
-    public readonly ulong Crc64;
+    /// <remarks> This value is cached after the first computation. </remarks>
+    public ulong Crc64
+        => _crc64 == 0 && !InternalName.IsEmpty ? (_crc64 = ByteStringFunctions.ComputeLowerCaseCrc64(InternalName)) : _crc64;
 
     /// <summary> An empty string. </summary>
     public static readonly FullPath Empty = new(string.Empty);
@@ -40,8 +44,7 @@ public readonly struct FullPath : IComparable, IEquatable<FullPath>
     public FullPath(string s)
     {
         FullName     = s.Replace('/', '\\').Trim();
-        InternalName = ByteString.FromString(FullName.Replace('\\', '/'), out var name, true) ? name : ByteString.Empty;
-        Crc64        = ByteStringFunctions.ComputeCrc64(InternalName.Span);
+        InternalName = CiByteString.FromString(FullName.Replace('\\', '/'), out var name) ? name : CiByteString.Empty;
     }
 
     /// <summary> Create a full path from a given game path.  </summary>
@@ -49,7 +52,6 @@ public readonly struct FullPath : IComparable, IEquatable<FullPath>
     {
         FullName     = path.ToString().Replace('/', '\\');
         InternalName = path.Path;
-        Crc64        = ByteStringFunctions.ComputeCrc64(InternalName.Span);
     }
 
     /// <summary> Check whether the file exists on your file system. </summary>
@@ -87,7 +89,7 @@ public readonly struct FullPath : IComparable, IEquatable<FullPath>
         var dirLength = Encoding.UTF8.GetByteCount(dir.FullName);
         var substring = InternalName.Substring(dirLength + 1);
 
-        path = new Utf8RelPath(substring.Replace((byte)'/', (byte)'\\'));
+        path = new Utf8RelPath(((ByteString)substring).Replace((byte)'/', (byte)'\\'));
         return true;
     }
 
@@ -96,19 +98,16 @@ public readonly struct FullPath : IComparable, IEquatable<FullPath>
     public int CompareTo(object? obj)
         => obj switch
         {
-            FullPath p   => InternalName?.CompareTo(p.InternalName) ?? -1,
-            FileInfo f   => string.Compare(FullName, f.FullName, StringComparison.OrdinalIgnoreCase),
-            ByteString u => InternalName?.CompareTo(u) ?? -1,
-            string s     => string.Compare(FullName, s, StringComparison.OrdinalIgnoreCase),
-            _            => -1,
+            FullPath p     => InternalName?.CompareTo(p.InternalName) ?? -1,
+            FileInfo f     => string.Compare(FullName, f.FullName, StringComparison.OrdinalIgnoreCase),
+            CiByteString u => InternalName?.CompareTo(u) ?? -1,
+            string s       => string.Compare(FullName, s, StringComparison.OrdinalIgnoreCase),
+            _              => -1,
         };
 
     /// <summary> Check if two FullPaths are equal. </summary>
     public bool Equals(FullPath other)
     {
-        if (Crc64 != other.Crc64)
-            return false;
-
         if (FullName.Length == 0 || other.FullName.Length == 0)
             return true;
 
