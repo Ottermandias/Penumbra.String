@@ -36,7 +36,7 @@ public static unsafe partial class ByteStringFunctions
     /// </summary>
     public static byte* AsciiToLower(byte* path, int length)
     {
-        var ptr = (byte*)Marshal.AllocHGlobal(length + 1);
+        var ptr = PenumbraStringMemory.Allocate(length + 1);
         ptr[length] = 0;
         for (var i = 0; i < length; ++i)
             ptr[i] = AsciiLowerCaseBytes[path[i]];

@@ -66,12 +66,13 @@ public sealed unsafe partial class ByteString : IDisposable
     /// <param name="isNullTerminated">Whether the string is known to be null-terminated or not.</param>
     /// <param name="isLower">Optionally, whether the string is known to only contain (ASCII) lower-case characters.</param>
     /// <param name="isAscii">Optionally, whether the string is known to only contain ASCII characters.</param>
+    /// <param name="crc32">Optionally, the known CRC32 hash of the string.</param>
     /// <exception cref="ArgumentOutOfRangeException">If length is larger than <inheritdoc cref="MaxLength"/>.</exception>
     /// <remarks>Always computes the CRC32 for the path.</remarks>
-    public static ByteString FromByteStringUnsafe(byte* path, int length, bool isNullTerminated, bool? isLower = null, bool? isAscii = false)
-        => new ByteString().Setup(path, length, null, isNullTerminated, false, isLower, isAscii);
+    public static ByteString FromByteStringUnsafe(byte* path, int length, bool isNullTerminated, bool? isLower = null, bool? isAscii = false, int? crc32 = null)
+        => new ByteString().Setup(path, length, crc32, isNullTerminated, false, isLower, isAscii);
 
-    /// <inheritdoc cref="FromByteStringUnsafe(byte*, int, bool, bool?, bool?)"/>
+    /// <inheritdoc cref="FromByteStringUnsafe(byte*, int, bool, bool?, bool?, int?)"/>
     public static ByteString FromSpanUnsafe(ReadOnlySpan<byte> path, bool isNullTerminated, bool? isLower = null, bool? isAscii = false)
     {
         fixed (byte* ptr = path)
@@ -131,8 +132,7 @@ public sealed unsafe partial class ByteString : IDisposable
         if (!IsOwned)
             return;
 
-        Marshal.FreeHGlobal((nint)_path);
-        GC.RemoveMemoryPressure(Length + 1);
+        PenumbraStringMemory.Free(_path, Length + 1);
         _length = AsciiCheckedFlag | AsciiFlag | AsciiLowerCheckedFlag | AsciiLowerFlag | NullTerminatedFlag;
         _path   = Null.NullBytePtr;
         _crc32  = 0;
@@ -167,10 +167,7 @@ public sealed unsafe partial class ByteString : IDisposable
             _length |= NullTerminatedFlag;
 
         if (isOwned)
-        {
-            GC.AddMemoryPressure(length + 1);
             _length |= OwnedFlag;
-        }
 
         if (isLower != null)
         {

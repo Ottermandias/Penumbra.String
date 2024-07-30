@@ -9,12 +9,12 @@ public static unsafe partial class ByteStringFunctions
 
         internal NullTerminator()
         {
-            NullBytePtr  = (byte*)Marshal.AllocHGlobal(1);
+            NullBytePtr  = PenumbraStringMemory.Allocate(1);
             *NullBytePtr = 0;
         }
 
         ~NullTerminator()
-            => Marshal.FreeHGlobal((nint)NullBytePtr);
+            => PenumbraStringMemory.Free(NullBytePtr, 1);
     }
 
     /// <summary>
@@ -27,7 +27,7 @@ public static unsafe partial class ByteStringFunctions
         if (length >= maxLength)
             return null;
 
-        var path = (byte*)Marshal.AllocHGlobal(length + 1);
+        var path = PenumbraStringMemory.Allocate(length + 1);
         fixed (char* ptr = s)
         {
             Encoding.UTF8.GetBytes(ptr, s.Length, path, length + 1);
@@ -42,7 +42,7 @@ public static unsafe partial class ByteStringFunctions
     /// </summary>
     public static byte* CopyString(byte* path, int length)
     {
-        var ret = (byte*)Marshal.AllocHGlobal(length + 1);
+        var ret = PenumbraStringMemory.Allocate(length + 1);
         MemoryUtility.MemCpyUnchecked(ret, path, length);
         ret[length] = 0;
         return ret;

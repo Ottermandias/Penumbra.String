@@ -164,7 +164,7 @@ public sealed unsafe partial class ByteString
     public static ByteString Join(byte splitter, params ByteString[] strings)
     {
         var length = strings.Sum(s => s.Length) + strings.Length;
-        var data   = (byte*)Marshal.AllocHGlobal(length);
+        var data   = PenumbraStringMemory.Allocate(length);
 
         var   ptr     = data;
         bool? isLower = ByteStringFunctions.AsciiIsLower(splitter);
@@ -192,7 +192,7 @@ public sealed unsafe partial class ByteString
     public static ByteString Join(params ByteString[] strings)
     {
         var length = strings.Sum(s => s.Length);
-        var data   = (byte*)Marshal.AllocHGlobal(length + 1);
+        var data   = PenumbraStringMemory.Allocate(length + 1);
 
         var   ptr     = data;
         bool? isLower = true;
