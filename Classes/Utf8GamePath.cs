@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 namespace Penumbra.String.Classes;
 
 /// <summary>
-/// A GamePath that verifies some invariants based on a ByteString.
+/// A GamePath that verifies some invariants based on a CiByteString.
 /// The Invariants are being smaller than <see cref="MaxGamePathLength"/>,
 /// and containing forward-slashes as separators.
 /// </summary>
@@ -19,49 +19,42 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
     /// <summary>
     /// Return the original path.
     /// </summary>
-    public readonly ByteString Path;
+    public readonly CiByteString Path;
 
     /// <summary> An empty path. </summary>
-    public static readonly Utf8GamePath Empty = new(ByteString.Empty);
+    public static readonly Utf8GamePath Empty = new(CiByteString.Empty);
 
-    internal Utf8GamePath(ByteString s)
+    internal Utf8GamePath(CiByteString s)
         => Path = s;
 
-    /// <inheritdoc cref="ByteString.Length"/>
+    /// <inheritdoc cref="CiByteString.Length"/>
     public int Length
         => Path.Length;
 
-    /// <inheritdoc cref="ByteString.IsEmpty"/>
+    /// <inheritdoc cref="CiByteString.IsEmpty"/>
     public bool IsEmpty
         => Path.IsEmpty;
-
-    /// <summary>
-    /// Return a path that consists only of lower-case ASCII characters. Non-ASCII characters are left untouched.
-    /// </summary>
-    /// <remarks>The new string is not guaranteed to be a copy. If the original string was lower-case, no copy is created.</remarks>
-    public Utf8GamePath ToLower()
-        => new(Path.AsciiToLower());
 
     /// <summary>
     /// Create a new Utf8GamePath from a pointer.
     /// </summary>
     /// <param name="ptr">The data.</param>
     /// <param name="path">The resulting game path if successful, an empty path otherwise.</param>
-    /// <param name="lower">Whether to turn the path into lower-case ASCII.</param>
+    /// <param name="flags">The metadata that should be pre-computed.</param>
     /// <returns>Whether the given pointer is a valid Utf8GamePath.</returns>
-    public static unsafe bool FromPointer(byte* ptr, out Utf8GamePath path, bool lower = false)
+    public static unsafe bool FromPointer(byte* ptr, MetaDataComputation flags, out Utf8GamePath path)
     {
-        var utf = new ByteString(ptr);
-        return ReturnChecked(utf, out path, lower);
+        var utf = new CiByteString(ptr, flags);
+        return ReturnChecked(utf, out path);
     }
 
     /// <summary>
     /// Same as <see cref="FromPointer"/> just with known length.
     /// </summary>
-    public static bool FromSpan(ReadOnlySpan<byte> data, out Utf8GamePath path, bool lower = false)
+    public static bool FromSpan(ReadOnlySpan<byte> data, MetaDataComputation flags, out Utf8GamePath path)
     {
-        var utf = ByteString.FromSpanUnsafe(data, false, null, null);
-        return ReturnChecked(utf, out path, lower);
+        var utf = new CiByteString(data, flags);
+        return ReturnChecked(utf, out path);
     }
 
     /// <summary>
@@ -71,15 +64,14 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
     /// </summary>
     /// <param name="utf"></param>
     /// <param name="path"></param>
-    /// <param name="lower"></param>
     /// <returns></returns>
-    private static bool ReturnChecked(ByteString utf, out Utf8GamePath path, bool lower = false)
+    private static bool ReturnChecked(CiByteString utf, out Utf8GamePath path)
     {
         path = Empty;
         if (utf.Length > MaxGamePathLength)
             return false;
 
-        path = new Utf8GamePath(lower ? utf.AsciiToLower() : utf);
+        path = new Utf8GamePath(utf);
         return true;
     }
 
@@ -92,9 +84,8 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
     /// </summary>
     /// <param name="s">The given string.</param>
     /// <param name="path">The converted path or an empty path on failure.</param>
-    /// <param name="toLower">Whether the string should be (ASCII) lower-cased.</param>
     /// <returns>False if the string is too long, or can not be converted to UTF8.</returns>
-    public static bool FromString(string? s, out Utf8GamePath path, bool toLower = false)
+    public static bool FromString(string? s, out Utf8GamePath path)
     {
         path = Empty;
         if (string.IsNullOrEmpty(s))
@@ -107,10 +98,9 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
         if (substring.Length == 0)
             return true;
 
-        if (!ByteString.FromString(substring, out var ascii, toLower))
+        if (!CiByteString.FromString(substring, out var ascii))
             return false;
 
-        var a = new int[5, 5];
         path = new Utf8GamePath(ascii);
         return true;
     }
@@ -120,9 +110,8 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
     /// </summary>
     /// <param name="s">The given string.</param>
     /// <param name="path">The string as UTF8GamePath, empty string on failure or null input.</param>
-    /// <param name="toLower">Whether the string should be (ASCII) lower-cased.</param>
     /// <returns>False if the string is too long.</returns>
-    public static bool FromByteString(ByteString? s, out Utf8GamePath path, bool toLower = false)
+    public static bool FromByteString(CiByteString? s, out Utf8GamePath path)
     {
         if (s is null)
         {
@@ -136,7 +125,7 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
             return false;
         }
 
-        path = new Utf8GamePath(toLower ? s.AsciiToLower() : s);
+        path = new Utf8GamePath(s);
         return true;
     }
 
@@ -146,22 +135,21 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
     /// <param name="file">The file path to convert.</param>
     /// <param name="baseDir">The directory to which the file path should be seen as relative. </param>
     /// <param name="path">The converted path or an empty path on failure.</param>
-    /// <param name="toLower">Whether the string should be (ASCII) lower-cased.</param>
     /// <returns>False if the file does not lie inside the base directory or the string conversion fails.</returns>
-    public static bool FromFile(FileInfo file, DirectoryInfo baseDir, out Utf8GamePath path, bool toLower = false)
+    public static bool FromFile(FileInfo file, DirectoryInfo baseDir, out Utf8GamePath path)
     {
         path = Empty;
         if (!file.FullName.StartsWith(baseDir.FullName))
             return false;
 
         var substring = file.FullName[(baseDir.FullName.Length + 1)..];
-        return FromString(substring, out path, toLower);
+        return FromString(substring, out path);
     }
 
     /// <summary>
     /// Get the non-owned substring of the file name of the path.
     /// </summary>
-    public ByteString Filename()
+    public CiByteString Filename()
     {
         var idx = Path.LastIndexOf((byte)'/');
         return idx == -1 ? Path : Path.Substring(idx + 1);
@@ -170,10 +158,10 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
     /// <summary>
     /// Get the non-owned substring of the extension of the path.
     /// </summary>
-    public ByteString Extension()
+    public CiByteString Extension()
     {
         var idx = Path.LastIndexOf((byte)'.');
-        return idx == -1 ? ByteString.Empty : Path.Substring(idx);
+        return idx == -1 ? CiByteString.Empty : Path.Substring(idx);
     }
 
     /// <inheritdoc cref="ByteString.Equals(ByteString?)"/>
@@ -196,14 +184,14 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
     public void Dispose()
         => Path.Dispose();
 
-    /// <inheritdoc cref="IsRooted(ByteString)"/>
+    /// <inheritdoc cref="IsRooted(CiByteString)"/>
     public bool IsRooted()
         => IsRooted(Path);
 
     /// <summary>
     /// Return whether the path is rooted.
     /// </summary>
-    public static bool IsRooted(ByteString path)
+    public static bool IsRooted(CiByteString path)
         => path.Length >= 1 && (path[0] == '/' || path[0] == '\\')
          || path.Length >= 2
          && (path[0] >= 'A' && path[0] <= 'Z' || path[0] >= 'a' && path[0] <= 'z')
@@ -220,7 +208,7 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
         public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
         {
             var token = JToken.Load(reader).ToString();
-            return FromString(token, out var p, true)
+            return FromString(token, out var p)
                 ? p
                 : throw new JsonException($"Could not convert \"{token}\" to {nameof(Utf8GamePath)}.");
         }

@@ -84,4 +84,9 @@ public sealed unsafe partial class ByteString : IEnumerable<byte>
     /// <returns>The CRC32 hash of the string.</returns>
     public override int GetHashCode()
         => _crc32;
+
+
+    /// <summary> Convert to CiByteString. </summary>
+    public static explicit operator CiByteString(ByteString s)
+        => new CiByteString().Setup(s.Path, s.Length, null, s.Crc32, s.IsNullTerminated, false, s.IsAsciiLowerInternal, s.IsAsciiInternal);
 }

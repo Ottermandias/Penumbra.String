@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Penumbra.String.Functions;
 
 public static unsafe partial class ByteStringFunctions
@@ -43,28 +45,22 @@ public static unsafe partial class ByteStringFunctions
 
 
     /// <summary>
-    /// Compute the FFXIV-CRC64 value, the CRC32 value, the ASCII state and the Lowercase state while iterating only once.
+    /// Compute the FFXIV-CRC64 value with lower-cased ascii letters.
     /// </summary>
-    public static int ComputeCrc64LowerAndSize(byte* ptr, out ulong crc64, out int crc32Ret, out bool isLower, out bool isAscii)
+    public static ulong ComputeLowerCaseCrc64(CiByteString name)
     {
-        var  tmp       = ptr;
-        uint crcFolder = 0;
-        uint crcFile   = 0;
-        var  crc32     = uint.MaxValue;
-        crc64   = 0;
-        isLower = true;
-        isAscii = true;
+        if (name.Length == 0)
+            return 0;
+
+        var tmp       = name.Path;
+        var crcFolder = 0u;
+        var crcFile   = 0u;
+        var crc32     = uint.MaxValue;
         while (true)
         {
             var value = *tmp;
             if (value == 0)
                 break;
-
-            if (AsciiToLower(*tmp) != *tmp)
-                isLower = false;
-
-            if (value > 0x80)
-                isAscii = false;
 
             if (value == (byte)'/')
             {
@@ -74,21 +70,106 @@ public static unsafe partial class ByteStringFunctions
             }
             else
             {
-                crcFile = CrcTable[(byte)(crcFolder ^ value)] ^ (crcFolder >> 8);
-                crc32   = CrcTable[(byte)(crc32 ^ value)] ^ (crc32 >> 8);
+                var lower = AsciiToLower(value);
+                crcFile = CrcTable[(byte)(crcFile ^ lower)] ^ (crcFile >> 8);
+                crc32   = CrcTable[(byte)(crc32 ^ lower)] ^ (crc32 >> 8);
             }
 
             ++tmp;
         }
 
+        return ((ulong)crcFolder << 32) | crcFile;
+    }
+
+    /// <summary>
+    /// Compute the case-insensitive CRC32 value and the length.
+    /// </summary>
+    public static int ComputeCiCrc32AndSize(byte* ptr, out int ciCrc32Ret)
+    {
+        var tmp     = ptr;
+        var ciCrc32 = uint.MaxValue;
+        while (true)
+        {
+            var value = *tmp;
+            if (value == 0)
+                break;
+
+            var lower = AsciiToLower(*tmp);
+            ciCrc32 = CrcTable[(byte)(ciCrc32 ^ lower)] ^ (ciCrc32 >> 8);
+            ++tmp;
+        }
+
         var size = (int)(tmp - ptr);
-        crc64    = ~((ulong)crcFolder << 32) | crcFile;
-        crc32Ret = (int)~crc32;
+        ciCrc32Ret = (int)~ciCrc32;
         return size;
     }
 
     /// <summary>
-    /// Compute the CRC32 value, the ASCII state and the Lowercase state while iterating only once.
+    /// Compute the case-insensitive CRC32 value, the length, the ASCII state and the Lowercase state while iterating only once.
+    /// </summary>
+    public static int ComputeCiCrc32AsciiLowerAndSize(byte* ptr, out int ciCrc32Ret, out bool isLower, out bool isAscii)
+    {
+        var tmp     = ptr;
+        var ciCrc32 = uint.MaxValue;
+        isLower = true;
+        isAscii = true;
+        while (true)
+        {
+            var value = *tmp;
+            if (value == 0)
+                break;
+
+            var lower = AsciiToLower(*tmp);
+            if (lower != value)
+                isLower = false;
+            if (value > 0x80)
+                isAscii = false;
+
+            ciCrc32 = CrcTable[(byte)(ciCrc32 ^ lower)] ^ (ciCrc32 >> 8);
+            ++tmp;
+        }
+
+        var size = (int)(tmp - ptr);
+        ciCrc32Ret = (int)~ciCrc32;
+        return size;
+    }
+
+    /// <summary>
+    /// Compute the case-insensitive and case-sensitive CRC32 value, the length, the ASCII state and the Lowercase state while iterating only once.
+    /// </summary>
+    public static int ComputeCiCrc32AsciiLowerAndSize(byte* ptr, out int ciCrc32Ret, out int crc32Ret, out bool isLower, out bool isAscii)
+    {
+        var tmp     = ptr;
+        var ciCrc32 = uint.MaxValue;
+        var crc32   = uint.MaxValue;
+        isLower = true;
+        isAscii = true;
+        while (true)
+        {
+            var value = *tmp;
+            if (value == 0)
+                break;
+
+            var lower = AsciiToLower(*tmp);
+            if (lower != value)
+                isLower = false;
+            if (value > 0x80)
+                isAscii = false;
+
+            ciCrc32 = CrcTable[(byte)(ciCrc32 ^ lower)] ^ (ciCrc32 >> 8);
+            crc32   = CrcTable[(byte)(crc32 ^ value)] ^ (crc32 >> 8);
+            ++tmp;
+        }
+
+        var size = (int)(tmp - ptr);
+        ciCrc32Ret = (int)~ciCrc32;
+        crc32Ret   = (int)~crc32;
+        return size;
+    }
+
+
+    /// <summary>
+    /// Compute the CRC32 value, the length, the ASCII state and the Lowercase state while iterating only once.
     /// </summary>
     public static int ComputeCrc32AsciiLowerAndSize(byte* ptr, out int crc32Ret, out bool isLower, out bool isAscii)
     {
@@ -115,5 +196,43 @@ public static unsafe partial class ByteStringFunctions
         var size = (int)(tmp - ptr);
         crc32Ret = (int)~crc32;
         return size;
+    }
+
+    /// <summary>
+    /// Compute the CRC32 value and the length while iterating only once.
+    /// </summary>
+    public static int ComputeCrc32AndSize(byte* ptr, out int crc32Ret)
+    {
+        var tmp   = ptr;
+        var crc32 = uint.MaxValue;
+        while (true)
+        {
+            var value = *tmp;
+            if (value == 0)
+                break;
+
+            crc32 = CrcTable[(byte)(crc32 ^ value)] ^ (crc32 >> 8);
+            ++tmp;
+        }
+
+        var size = (int)(tmp - ptr);
+        crc32Ret = (int)~crc32;
+        return size;
+    }
+
+    /// <summary> Compute the length of a null-terminated string. </summary>
+    public static int ComputeSize(byte* ptr)
+    {
+        var tmp = ptr;
+        while (true)
+        {
+            var value = *tmp;
+            if (value == 0)
+                break;
+
+            ++tmp;
+        }
+
+        return (int)(tmp - ptr);
     }
 }

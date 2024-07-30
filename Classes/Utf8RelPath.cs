@@ -79,7 +79,7 @@ public readonly struct Utf8RelPath : IEquatable<Utf8RelPath>, IComparable<Utf8Re
     /// Create a new RelPath from a GamePath by replacing all forward slashes with backward slashes.
     /// </summary>
     public Utf8RelPath(Utf8GamePath gamePath)
-        => Path = gamePath.Path.Replace((byte)'/', (byte)'\\');
+        => Path = ((ByteString)gamePath.Path).Replace((byte)'/', (byte)'\\');
 
     /// <summary>
     /// Convert to Utf8GamePath by replacing all backward slashes with forward slashes, and turning to lower case.
@@ -99,8 +99,7 @@ public readonly struct Utf8RelPath : IEquatable<Utf8RelPath>, IComparable<Utf8Re
         var length = Path.Length - idx;
         var ptr    = ByteStringFunctions.CopyString(Path.Path + idx, length);
         ByteStringFunctions.Replace(ptr, length, (byte)'\\', (byte)'/');
-        ByteStringFunctions.AsciiToLowerInPlace(ptr, length);
-        var utf = new ByteString().Setup(ptr, length, null, true, true, true, true);
+        var utf = new CiByteString().Setup(ptr, length, null, null, true, true, true, true);
         return new Utf8GamePath(utf);
     }
 
