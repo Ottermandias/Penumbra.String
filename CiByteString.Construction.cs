@@ -76,7 +76,8 @@ public sealed unsafe partial class CiByteString : IDisposable
     /// <summary> Create a temporary ByteString from a byte pointer which should be null-terminated. </summary>
     /// <param name="path"> A pointer to an existing string. </param>
     /// <param name="flags"> Which meta information to precompute. </param>
-    public CiByteString(byte* path, MetaDataComputation flags = MetaDataComputation.None)
+    /// <param name="maxLength"> The maximum length to scan for a null-terminator. </param>
+    public CiByteString(byte* path, MetaDataComputation flags = MetaDataComputation.None, int maxLength = int.MaxValue)
     {
         if (path == null)
         {
@@ -88,19 +89,19 @@ public sealed unsafe partial class CiByteString : IDisposable
         }
         else
         {
-            var length = SetupFromFlags(path, flags, out var ciCrc32, out var crc32, out var asciiLower, out var ascii);
-            Setup(path, length, ciCrc32, crc32, true, false, asciiLower, ascii);
+            var length = SetupFromFlags(path, maxLength, flags, out var ciCrc32, out var crc32, out var asciiLower, out var ascii, out var nullTerminated);
+            Setup(path, length, ciCrc32, crc32, nullTerminated, false, asciiLower, ascii);
         }
     }
 
-    private static int SetupFromFlags(byte* path, MetaDataComputation flags, out int? ciCrc32, out int? crc32,
-        out bool? asciiLower, out bool? ascii, int? length = null)
+    private static int SetupFromFlags(byte* path, int maxLength, MetaDataComputation flags, out int? ciCrc32, out int? crc32,
+        out bool? asciiLower, out bool? ascii, out bool nullTerminated, int? length = null)
     {
         switch (flags)
         {
             case MetaDataComputation.CiCrc32:
             {
-                length     = ByteStringFunctions.ComputeCiCrc32AndSize(path, out var c);
+                length     = ByteStringFunctions.ComputeCiCrc32AndSize(path, out var c, out nullTerminated, maxLength);
                 ciCrc32    = c;
                 crc32      = null;
                 asciiLower = null;
@@ -109,7 +110,7 @@ public sealed unsafe partial class CiByteString : IDisposable
             }
             case MetaDataComputation.Crc32:
             {
-                length     = ByteStringFunctions.ComputeCrc32AndSize(path, out var c);
+                length     = ByteStringFunctions.ComputeCrc32AndSize(path, out var c, out nullTerminated, maxLength);
                 crc32      = c;
                 ciCrc32    = null;
                 asciiLower = null;
@@ -124,7 +125,7 @@ public sealed unsafe partial class CiByteString : IDisposable
             case MetaDataComputation.Ascii:
             case MetaDataComputation.CiCrc32 | MetaDataComputation.AsciiLowerCase | MetaDataComputation.Ascii:
             {
-                length     = ByteStringFunctions.ComputeCiCrc32AsciiLowerAndSize(path, out var c, out var l, out var a);
+                length     = ByteStringFunctions.ComputeCiCrc32AsciiLowerAndSize(path, out var c, out var l, out var a, out nullTerminated, maxLength);
                 ciCrc32    = c;
                 crc32      = null;
                 asciiLower = l;
@@ -136,7 +137,7 @@ public sealed unsafe partial class CiByteString : IDisposable
             case MetaDataComputation.Crc32 | MetaDataComputation.Ascii:
             case MetaDataComputation.Crc32 | MetaDataComputation.AsciiLowerCase | MetaDataComputation.Ascii:
             {
-                length     = ByteStringFunctions.ComputeCrc32AsciiLowerAndSize(path, out var c, out var l, out var a);
+                length     = ByteStringFunctions.ComputeCrc32AsciiLowerAndSize(path, out var c, out var l, out var a, out nullTerminated, maxLength);
                 ciCrc32    = null;
                 crc32      = c;
                 asciiLower = l;
@@ -149,7 +150,7 @@ public sealed unsafe partial class CiByteString : IDisposable
             case MetaDataComputation.Crc32 | MetaDataComputation.CiCrc32 | MetaDataComputation.Ascii:
             case MetaDataComputation.Crc32 | MetaDataComputation.CiCrc32 | MetaDataComputation.AsciiLowerCase | MetaDataComputation.Ascii:
             {
-                length     = ByteStringFunctions.ComputeCiCrc32AsciiLowerAndSize(path, out var ci, out var c, out var l, out var a);
+                length     = ByteStringFunctions.ComputeCiCrc32AsciiLowerAndSize(path, out var ci, out var c, out var l, out var a, out nullTerminated, maxLength);
                 ciCrc32    = ci;
                 crc32      = c;
                 asciiLower = l;
@@ -158,23 +159,23 @@ public sealed unsafe partial class CiByteString : IDisposable
             }
 
             default:
-                ciCrc32    = null;
-                crc32      = null;
-                asciiLower = null;
-                ascii      = null;
-                return length ?? ByteStringFunctions.ComputeSize(path);
+                ciCrc32        = null;
+                crc32          = null;
+                asciiLower     = null;
+                ascii          = null;
+                nullTerminated = false;
+                return length ?? ByteStringFunctions.ComputeSize(path, out nullTerminated, maxLength);
         }
     }
 
     /// <summary> Create a temporary ByteString from a byte span. </summary>
-    /// <param name="path">A null-terminated span of an existing string.</param>
+    /// <param name="path">A preferably null-terminated span of an existing string.</param>
     /// <param name="flags"> Which meta information to precompute. </param>
     /// <remarks>
-    /// This computes CRC, checks for ASCII and AsciiLower and assumes Null-Termination.
-    /// It does not care for the length of the span.
+    /// This computes all required values for the string up to null-termination or the length of the span.
     /// </remarks>
     public CiByteString(ReadOnlySpan<byte> path, MetaDataComputation flags = 0)
-        : this(SpanHelper(path), flags)
+        : this(SpanHelper(path), flags, path.Length)
     { }
 
     /// <summary>
@@ -207,7 +208,7 @@ public sealed unsafe partial class CiByteString : IDisposable
             flags &= ~MetaDataComputation.AsciiLowerCase;
         }
 
-        SetupFromFlags(p, flags, out var ciCrc32, out var crc32, out var lower, out _, l);
+        SetupFromFlags(p, l, flags, out var ciCrc32, out var crc32, out var lower, out _, out _, l);
         ret = new CiByteString().Setup(p, l, ciCrc32, crc32, true, true, toAsciiLower ? true : lower, l == path.Length);
         return true;
     }
@@ -347,7 +348,7 @@ public sealed unsafe partial class CiByteString : IDisposable
         if (_flags.HasFlag(Flags.HasCrc32))
             return _crc32;
 
-        ByteStringFunctions.ComputeCrc32AndSize(_path, out _crc32);
+        ByteStringFunctions.ComputeCrc32AndSize(_path, out _crc32, out _);
         _flags |= Flags.HasCrc32;
         return _crc32;
     }
@@ -357,7 +358,7 @@ public sealed unsafe partial class CiByteString : IDisposable
         if (_flags.HasFlag(Flags.HasCiCrc32))
             return _ciCrc32;
 
-        ByteStringFunctions.ComputeCiCrc32AndSize(_path, out _ciCrc32);
+        ByteStringFunctions.ComputeCiCrc32AndSize(_path, out _ciCrc32, out _);
         _flags |= Flags.HasCiCrc32;
         return _ciCrc32;
     }

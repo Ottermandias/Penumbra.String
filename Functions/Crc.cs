@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace Penumbra.String.Functions;
 
 public static unsafe partial class ByteStringFunctions
@@ -84,19 +82,22 @@ public static unsafe partial class ByteStringFunctions
     /// <summary>
     /// Compute the case-insensitive CRC32 value and the length.
     /// </summary>
-    public static int ComputeCiCrc32AndSize(byte* ptr, out int ciCrc32Ret)
+    public static int ComputeCiCrc32AndSize(byte* ptr, out int ciCrc32Ret, out bool nullTerminated, int maxLength = int.MaxValue)
     {
-        var tmp     = ptr;
         var ciCrc32 = uint.MaxValue;
-        while (true)
+        var tmp     = ptr;
+        nullTerminated = false;
+        for (var end = ptr + maxLength; tmp < end; ++tmp)
         {
             var value = *tmp;
             if (value == 0)
+            {
+                nullTerminated = true;
                 break;
+            }
 
             var lower = AsciiToLower(*tmp);
             ciCrc32 = CrcTable[(byte)(ciCrc32 ^ lower)] ^ (ciCrc32 >> 8);
-            ++tmp;
         }
 
         var size = (int)(tmp - ptr);
@@ -104,20 +105,26 @@ public static unsafe partial class ByteStringFunctions
         return size;
     }
 
+
     /// <summary>
     /// Compute the case-insensitive CRC32 value, the length, the ASCII state and the Lowercase state while iterating only once.
     /// </summary>
-    public static int ComputeCiCrc32AsciiLowerAndSize(byte* ptr, out int ciCrc32Ret, out bool isLower, out bool isAscii)
+    public static int ComputeCiCrc32AsciiLowerAndSize(byte* ptr, out int ciCrc32Ret, out bool isLower, out bool isAscii,
+        out bool nullTerminated, int maxLength = int.MaxValue)
     {
-        var tmp     = ptr;
         var ciCrc32 = uint.MaxValue;
         isLower = true;
         isAscii = true;
-        while (true)
+        var tmp = ptr;
+        nullTerminated = false;
+        for (var end = ptr + maxLength; tmp < end; ++tmp)
         {
             var value = *tmp;
             if (value == 0)
+            {
+                nullTerminated = true;
                 break;
+            }
 
             var lower = AsciiToLower(*tmp);
             if (lower != value)
@@ -126,7 +133,6 @@ public static unsafe partial class ByteStringFunctions
                 isAscii = false;
 
             ciCrc32 = CrcTable[(byte)(ciCrc32 ^ lower)] ^ (ciCrc32 >> 8);
-            ++tmp;
         }
 
         var size = (int)(tmp - ptr);
@@ -137,18 +143,23 @@ public static unsafe partial class ByteStringFunctions
     /// <summary>
     /// Compute the case-insensitive and case-sensitive CRC32 value, the length, the ASCII state and the Lowercase state while iterating only once.
     /// </summary>
-    public static int ComputeCiCrc32AsciiLowerAndSize(byte* ptr, out int ciCrc32Ret, out int crc32Ret, out bool isLower, out bool isAscii)
+    public static int ComputeCiCrc32AsciiLowerAndSize(byte* ptr, out int ciCrc32Ret, out int crc32Ret, out bool isLower, out bool isAscii,
+        out bool nullTerminated, int maxLength = int.MaxValue)
     {
-        var tmp     = ptr;
         var ciCrc32 = uint.MaxValue;
         var crc32   = uint.MaxValue;
         isLower = true;
         isAscii = true;
-        while (true)
+        var tmp = ptr;
+        nullTerminated = false;
+        for (var end = ptr + maxLength; tmp < end; ++tmp)
         {
             var value = *tmp;
             if (value == 0)
+            {
+                nullTerminated = true;
                 break;
+            }
 
             var lower = AsciiToLower(*tmp);
             if (lower != value)
@@ -158,7 +169,6 @@ public static unsafe partial class ByteStringFunctions
 
             ciCrc32 = CrcTable[(byte)(ciCrc32 ^ lower)] ^ (ciCrc32 >> 8);
             crc32   = CrcTable[(byte)(crc32 ^ value)] ^ (crc32 >> 8);
-            ++tmp;
         }
 
         var size = (int)(tmp - ptr);
@@ -171,17 +181,22 @@ public static unsafe partial class ByteStringFunctions
     /// <summary>
     /// Compute the CRC32 value, the length, the ASCII state and the Lowercase state while iterating only once.
     /// </summary>
-    public static int ComputeCrc32AsciiLowerAndSize(byte* ptr, out int crc32Ret, out bool isLower, out bool isAscii)
+    public static int ComputeCrc32AsciiLowerAndSize(byte* ptr, out int crc32Ret, out bool isLower, out bool isAscii, out bool nullTerminated,
+        int maxLength = int.MaxValue)
     {
-        var tmp   = ptr;
         var crc32 = uint.MaxValue;
         isLower = true;
         isAscii = true;
-        while (true)
+        var tmp = ptr;
+        nullTerminated = false;
+        for (var end = ptr + maxLength; tmp < end; ++tmp)
         {
             var value = *tmp;
             if (value == 0)
+            {
+                nullTerminated = true;
                 break;
+            }
 
             if (AsciiToLower(*tmp) != *tmp)
                 isLower = false;
@@ -190,7 +205,6 @@ public static unsafe partial class ByteStringFunctions
                 isAscii = false;
 
             crc32 = CrcTable[(byte)(crc32 ^ value)] ^ (crc32 >> 8);
-            ++tmp;
         }
 
         var size = (int)(tmp - ptr);
@@ -201,18 +215,21 @@ public static unsafe partial class ByteStringFunctions
     /// <summary>
     /// Compute the CRC32 value and the length while iterating only once.
     /// </summary>
-    public static int ComputeCrc32AndSize(byte* ptr, out int crc32Ret)
+    public static int ComputeCrc32AndSize(byte* ptr, out int crc32Ret, out bool nullTerminated, int maxLength = int.MaxValue)
     {
-        var tmp   = ptr;
         var crc32 = uint.MaxValue;
-        while (true)
+        var tmp   = ptr;
+        nullTerminated = false;
+        for (var end = ptr + maxLength; tmp < end; ++tmp)
         {
             var value = *tmp;
             if (value == 0)
+            {
+                nullTerminated = true;
                 break;
+            }
 
             crc32 = CrcTable[(byte)(crc32 ^ value)] ^ (crc32 >> 8);
-            ++tmp;
         }
 
         var size = (int)(tmp - ptr);
@@ -221,16 +238,18 @@ public static unsafe partial class ByteStringFunctions
     }
 
     /// <summary> Compute the length of a null-terminated string. </summary>
-    public static int ComputeSize(byte* ptr)
+    public static int ComputeSize(byte* ptr, out bool nullTerminated, int maxLength = int.MaxValue)
     {
         var tmp = ptr;
-        while (true)
+        nullTerminated = false;
+        for (var end = ptr + maxLength; tmp < end; ++tmp)
         {
             var value = *tmp;
             if (value == 0)
+            {
+                nullTerminated = true;
                 break;
-
-            ++tmp;
+            }
         }
 
         return (int)(tmp - ptr);
