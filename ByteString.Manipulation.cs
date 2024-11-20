@@ -72,6 +72,26 @@ public sealed unsafe partial class ByteString
         return ret;
     }
 
+    /// <summary> Create an owned copy of the given string in reverse. </summary>
+    public ByteString Revert()
+    {
+        if (IsEmpty)
+            return Empty;
+
+        var ret = new ByteString();
+        ret._length = _length | OwnedFlag | NullTerminatedFlag;
+        var length = Length;
+        ret._path = ByteStringFunctions.CopyString(Path, length);
+        for (var i = 0; i < length / 2; ++i)
+        {
+            var reverseI = length - 1 - i;
+            (ret._path[i], ret._path[reverseI]) = (ret._path[reverseI], ret._path[i]);
+        }
+
+        ret._crc32 = (int)Lumina.Misc.Crc32.Get(ret.Span);
+        return ret;
+    }
+
     /// <summary> Create a non-owning substring from the given position. </summary>
     /// <param name="from">The starting position.</param>
     /// <remarks>If from is negative or too large, the returned string will be the empty string.</remarks>
