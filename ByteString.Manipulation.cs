@@ -88,7 +88,7 @@ public sealed unsafe partial class ByteString
             (ret._path[i], ret._path[reverseI]) = (ret._path[reverseI], ret._path[i]);
         }
 
-        ret._crc32 = (int)Lumina.Misc.Crc32.Get(ret.Span);
+        ret._crc32 = ~(int)Lumina.Misc.Crc32.Get(ret.Span);
         return ret;
     }
 
