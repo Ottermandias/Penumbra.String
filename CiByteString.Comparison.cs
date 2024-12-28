@@ -1,3 +1,4 @@
+using System.Text.Unicode;
 using Penumbra.String.Functions;
 
 namespace Penumbra.String;
@@ -96,6 +97,65 @@ public sealed unsafe partial class CiByteString : IEquatable<CiByteString>, ICom
         return chars.SequenceEqual(new ReadOnlySpan<byte>(ptr, chars.Length));
     }
 
+    /// <summary> Check whether this string contains a substring disregarding case anywhere. </summary>
+    /// <param name="other">The substring to check for.</param>
+    public bool Contains(CiByteString other)
+    {
+        var length    = Length;
+        var subLength = other.Length;
+        if (subLength > length)
+            return false;
+        if (subLength == 0)
+            return true;
+
+        var isLower = IsAsciiLowerInternal is true;
+        if (subLength == 1)
+            return ContainsLength1SpecialCase(this, other.Span, isLower);
+
+        var otherIsLower = other.IsAsciiLowerInternal is true;
+        if (isLower && otherIsLower)
+            return Span.IndexOf(other.Span) >= 0;
+
+        return ContainsDefaultCase(_path, other._path, _path + length - subLength, subLength, isLower);
+    }
+
+
+    /// <inheritdoc cref="Contains(CiByteString)"/>
+    public bool Contains(ReadOnlySpan<byte> other)
+    {
+        var length    = Length;
+        var subLength = other.Length;
+        if (subLength > length)
+            return false;
+        if (subLength == 0)
+            return true;
+
+        var isLower = IsAsciiLowerInternal is true;
+        if (subLength == 1)
+            return ContainsLength1SpecialCase(this, other, isLower);
+
+        fixed (byte* ptr = other)
+        {
+            return ContainsDefaultCase(_path, ptr, _path + length - subLength, subLength, isLower);
+        }
+    }
+
+    /// <summary> Check whether this string contains an exact substring anywhere. </summary>
+    /// <param name="other">The substring to check for.</param>
+    public bool ContainsCs(CiByteString other)
+        => ContainsCs(other.Span);
+
+
+    /// <inheritdoc cref="ContainsCs(CiByteString)"/>
+    public bool ContainsCs(ReadOnlySpan<byte> other)
+    {
+        if (other.Length > Length)
+            return false;
+
+
+        return Span.IndexOf(other) >= 0;
+    }
+
     /// <summary>
     /// Find the first occurrence of <paramref name="b"/> in this string.
     /// </summary>
@@ -159,4 +219,43 @@ public sealed unsafe partial class CiByteString : IEquatable<CiByteString>, ICom
         => (IsAsciiLowerInternal ?? false) && (other.IsAsciiLowerInternal ?? false)
             ? ByteStringFunctions.Compare(_path, Length, other._path, other.Length)
             : ByteStringFunctions.AsciiCaselessCompare(_path, Length, other._path, other.Length);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static bool ContainsLength1SpecialCase(CiByteString hayStack, ReadOnlySpan<byte> other, bool isLower)
+    {
+        var needle = ByteStringFunctions.AsciiToLower(other[0]);
+        if (isLower)
+            return hayStack.Contains(needle);
+
+        foreach (var c in hayStack)
+        {
+            if (ByteStringFunctions.AsciiToLower(c) == needle)
+                return true;
+        }
+
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static bool ContainsDefaultCase(byte* hayStack, byte* other, byte* end, int subLength, bool isLower)
+    {
+        var start = ByteStringFunctions.AsciiToLower(other[0]);
+        ++other;
+        --subLength;
+        if (isLower)
+            for (; hayStack < end; ++hayStack)
+            {
+                if (*hayStack != start && MemoryUtility.MemCmpCaseInsensitiveUnchecked(hayStack + 1, other, subLength) == 0)
+                    return true;
+            }
+        else
+            for (; hayStack < end; ++hayStack)
+            {
+                if (ByteStringFunctions.AsciiToLower(*hayStack) != start
+                 && MemoryUtility.MemCmpCaseInsensitiveUnchecked(hayStack + 1, other, subLength) == 0)
+                    return true;
+            }
+
+        return false;
+    }
 }
