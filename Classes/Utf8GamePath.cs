@@ -198,6 +198,15 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
          && path[1] == ':';
 
     /// <summary>
+    /// Return whether the path is rooted.
+    /// </summary>
+    public static bool IsRooted(ReadOnlySpan<byte> path)
+        => path.Length >= 1 && (path[0] == '/' || path[0] == '\\')
+         || path.Length >= 2
+         && (path[0] >= 'A' && path[0] <= 'Z' || path[0] >= 'a' && path[0] <= 'z')
+         && path[1] == ':';
+
+    /// <summary>
     /// Conversion from and to string.
     /// </summary>
     private class Utf8GamePathConverter : JsonConverter
