@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using Microsoft.VisualBasic.CompilerServices;
-using Penumbra.String.Functions;
 
 namespace Penumbra.String;
 
