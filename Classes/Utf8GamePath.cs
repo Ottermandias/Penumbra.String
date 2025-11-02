@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Text.Unicode;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -9,7 +11,7 @@ namespace Penumbra.String.Classes;
 /// and containing forward-slashes as separators.
 /// </summary>
 [JsonConverter(typeof(Utf8GamePathConverter))]
-public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8GamePath>, IDisposable
+public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8GamePath>, IDisposable, IUtf8SpanFormattable, ISpanFormattable
 {
     /// <summary>
     /// The maximum length Penumbra accepts.
@@ -178,7 +180,7 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
 
     /// <inheritdoc cref="ByteString.ToString"/>
     public override string ToString()
-        => Path.ToString();
+        => $"{Path}";
 
     /// <inheritdoc cref="ByteString.Dispose"/>
     public void Dispose()
@@ -230,5 +232,30 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
             if (value is Utf8GamePath p)
                 serializer.Serialize(writer, p.ToString());
         }
+    }
+
+    /// <inheritdoc />
+    public string ToString(string? format, IFormatProvider? formatProvider)
+    {
+        FormattableString formattable = $"{Path}";
+        return formattable.ToString(formatProvider);
+    }
+
+    /// <inheritdoc />
+    public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        => Utf8.ToUtf16(Path.Span, destination, out _, out charsWritten) is OperationStatus.Done;
+
+    /// <inheritdoc />
+    public bool TryFormat(Span<byte> destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+    {
+        if (destination.Length >= Length)
+        {
+            Path.Span.CopyTo(destination);
+            bytesWritten = Length;
+            return true;
+        }
+
+        bytesWritten = 0;
+        return false;
     }
 }
