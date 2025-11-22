@@ -210,9 +210,21 @@ public sealed unsafe partial class CiByteString : IEquatable<CiByteString>, ICom
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private bool StringEqualsCi(CiByteString other)
-        => (IsAsciiLowerInternal ?? false) && (other.IsAsciiLowerInternal ?? false)
-            ? ByteStringFunctions.Equals(_path, Length, other._path, other.Length)
-            : ByteStringFunctions.AsciiCaselessEquals(_path, Length, other._path, other.Length);
+    {
+        // Fast path when both known lower-case
+        if ((IsAsciiLowerInternal ?? false) && (other.IsAsciiLowerInternal ?? false))
+            return ByteStringFunctions.Equals(_path, Length, other._path, other.Length);
+
+        // If either contains wildcard, perform managed regex matching (case-insensitive)
+        if (IndexOf((byte)'*') >= 0 || other.IndexOf((byte)'*') >= 0)
+        {
+            var s1 = ToString();
+            var s2 = other.ToString();
+            return ByteStringFunctions.EqualsCiWildcard(s1, s2);
+        }
+
+        return ByteStringFunctions.AsciiCaselessEquals(_path, Length, other._path, other.Length);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private int StringCompareCi(CiByteString other)

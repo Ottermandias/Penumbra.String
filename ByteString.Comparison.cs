@@ -34,6 +34,14 @@ public sealed unsafe partial class ByteString : IEquatable<ByteString>, ICompara
         if ((IsAsciiLowerInternal ?? false) && (other.IsAsciiLowerInternal ?? false))
             return EqualsInternal(other);
 
+        // If either string contains a wildcard, perform pattern matching (either direction).
+        if (IndexOf((byte)'*') >= 0 || other.IndexOf((byte)'*') >= 0)
+        {
+            var s1 = ToString();
+            var s2 = other.ToString();
+            return ByteStringFunctions.EqualsCiWildcard(s1, s2);
+        }
+
         return ByteStringFunctions.AsciiCaselessEquals(_path, Length, other._path, other.Length);
     }
 
