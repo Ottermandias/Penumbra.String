@@ -115,51 +115,7 @@ public static unsafe partial class ByteStringFunctions
     /// </summary>
     private static bool WildcardMatchCi(string pattern, string text)
     {
-        var pIdx = 0;
-        var tIdx = 0;
-        var starIdx = -1;
-        var matchIdx = 0;
-
-        while (tIdx < text.Length)
-        {
-            if (pIdx < pattern.Length && (pattern[pIdx] == '*' || CharEqualCi(pattern[pIdx], text[tIdx])))
-            {
-                if (pattern[pIdx] == '*')
-                {
-                    starIdx = pIdx;
-                    matchIdx = tIdx;
-                    pIdx++;
-                }
-                else
-                {
-                    pIdx++;
-                    tIdx++;
-                }
-            }
-            else if (starIdx >= 0)
-            {
-                pIdx = starIdx + 1;
-                matchIdx++;
-                tIdx = matchIdx;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        // Handle remaining characters in pattern (should only be *)
-        while (pIdx < pattern.Length && pattern[pIdx] == '*')
-            pIdx++;
-
-        return pIdx == pattern.Length;
+        var regexPattern = "^" + System.Text.RegularExpressions.Regex.Escape(pattern).Replace("\\*", ".*") + "$";
+        return System.Text.RegularExpressions.Regex.IsMatch(text, regexPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
     }
-
-    /// <summary> Case-insensitive character equality for ASCII. </summary>
-    private static bool CharEqualCi(char a, char b)
-        => AsciiToLower(a) == AsciiToLower(b);
-
-    /// <summary> Convert ASCII character to lowercase. </summary>
-    private static char AsciiToLower(char c)
-        => c >= 'A' && c <= 'Z' ? (char)(c + 32) : c;
 }
