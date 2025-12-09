@@ -245,14 +245,14 @@ public sealed unsafe partial class CiByteString : IEquatable<CiByteString>, ICom
         if (isLower)
             for (; hayStack < end; ++hayStack)
             {
-                if (*hayStack != start && MemoryUtility.MemCmpCaseInsensitiveUnchecked(hayStack + 1, other, subLength) == 0)
+                if (*hayStack == start && MemoryUtility.MemCmpCaseInsensitiveUnchecked(hayStack + 1, other, subLength) is 0)
                     return true;
             }
         else
             for (; hayStack < end; ++hayStack)
             {
-                if (ByteStringFunctions.AsciiToLower(*hayStack) != start
-                 && MemoryUtility.MemCmpCaseInsensitiveUnchecked(hayStack + 1, other, subLength) == 0)
+                if (ByteStringFunctions.AsciiToLower(*hayStack) == start
+                 && MemoryUtility.MemCmpCaseInsensitiveUnchecked(hayStack + 1, other, subLength) is 0)
                     return true;
             }
 
