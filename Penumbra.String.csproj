@@ -1,10 +1,10 @@
-<Project Sdk="Dalamud.NET.Sdk/14.0.0">
+<Project Sdk="Dalamud.NET.Sdk/14.0.1">
     <PropertyGroup>
         <AssemblyTitle>ByteString</AssemblyTitle>
         <Copyright>Copyright © 2025</Copyright>
         <FileVersion>1.0.0.0</FileVersion>
         <AssemblyVersion>1.0.0.0</AssemblyVersion>
-        <PackageVersion>1.0.6</PackageVersion>
+        <PackageVersion>1.0.7</PackageVersion>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <OutputPath>bin\$(Configuration)\</OutputPath>
     </PropertyGroup>
