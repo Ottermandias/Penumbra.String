@@ -1,7 +1,5 @@
 using System.Buffers;
 using System.Text.Unicode;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Penumbra.String.Classes;
 
@@ -10,7 +8,8 @@ namespace Penumbra.String.Classes;
 /// The Invariants are being smaller than <see cref="MaxGamePathLength"/>,
 /// and containing forward-slashes as separators.
 /// </summary>
-[JsonConverter(typeof(Utf8GamePathConverter))]
+[Newtonsoft.Json.JsonConverter(typeof(NewtonsoftConverter.Utf8GamePath))]
+[System.Text.Json.Serialization.JsonConverter(typeof(SystemConverter.Utf8GamePath))]
 public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8GamePath>, IDisposable, IUtf8SpanFormattable, ISpanFormattable
 {
     /// <summary>
@@ -97,7 +96,7 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
         if (substring.Length > MaxGamePathLength)
             return false;
 
-        if (substring.Length == 0)
+        if (substring.Length is 0)
             return true;
 
         if (!CiByteString.FromString(substring, out var ascii))
@@ -154,7 +153,7 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
     public CiByteString Filename()
     {
         var idx = Path.LastIndexOf((byte)'/');
-        return idx == -1 ? Path : Path.Substring(idx + 1);
+        return idx is -1 ? Path : Path.Substring(idx + 1);
     }
 
     /// <summary>
@@ -163,7 +162,7 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
     public CiByteString Extension()
     {
         var idx = Path.LastIndexOf((byte)'.');
-        return idx == -1 ? CiByteString.Empty : Path.Substring(idx);
+        return idx is -1 ? CiByteString.Empty : Path.Substring(idx);
     }
 
     /// <inheritdoc cref="ByteString.Equals(ByteString?)"/>
@@ -194,45 +193,19 @@ public readonly struct Utf8GamePath : IEquatable<Utf8GamePath>, IComparable<Utf8
     /// Return whether the path is rooted.
     /// </summary>
     public static bool IsRooted(CiByteString path)
-        => path.Length >= 1 && (path[0] == '/' || path[0] == '\\')
+        => path.Length >= 1 && (path[0] is (byte)'/' || path[0] is (byte)'\\')
          || path.Length >= 2
-         && (path[0] >= 'A' && path[0] <= 'Z' || path[0] >= 'a' && path[0] <= 'z')
-         && path[1] == ':';
+         && (path[0] is >= (byte)'A' and <= (byte)'Z' || path[0] is >= (byte)'a' and <= (byte)'z')
+         && path[1] is (byte)':';
 
     /// <summary>
     /// Return whether the path is rooted.
     /// </summary>
     public static bool IsRooted(ReadOnlySpan<byte> path)
-        => path.Length >= 1 && (path[0] == '/' || path[0] == '\\')
+        => path.Length >= 1 && (path[0] is (byte)'/' || path[0] is (byte)'\\')
          || path.Length >= 2
-         && (path[0] >= 'A' && path[0] <= 'Z' || path[0] >= 'a' && path[0] <= 'z')
-         && path[1] == ':';
-
-    /// <summary>
-    /// Conversion from and to string.
-    /// </summary>
-    private class Utf8GamePathConverter : JsonConverter
-    {
-        public override bool CanConvert(Type objectType)
-            => objectType == typeof(Utf8GamePath);
-
-        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
-        {
-            var token = JToken.Load(reader).ToString();
-            return FromString(token, out var p)
-                ? p
-                : throw new JsonException($"Could not convert \"{token}\" to {nameof(Utf8GamePath)}.");
-        }
-
-        public override bool CanWrite
-            => true;
-
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            if (value is Utf8GamePath p)
-                serializer.Serialize(writer, p.ToString());
-        }
-    }
+         && (path[0] is >= (byte)'A' and <= (byte)'Z' || path[0] is >= (byte)'a' and <= (byte)'z')
+         && path[1] is (byte)':';
 
     /// <inheritdoc />
     public string ToString(string? format, IFormatProvider? formatProvider)

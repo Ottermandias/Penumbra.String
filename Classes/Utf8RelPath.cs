@@ -1,5 +1,3 @@
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Penumbra.String.Functions;
 
 namespace Penumbra.String.Classes;
@@ -8,7 +6,8 @@ namespace Penumbra.String.Classes;
 /// A relative path that verifies some invariants based on an UTF8 string.
 /// Similar to Utf8GamePath just kept for filesystem interaction instead of FFXIV interaction.
 /// </summary>
-[JsonConverter(typeof(Utf8RelPathConverter))]
+[Newtonsoft.Json.JsonConverter(typeof(NewtonsoftConverter.Utf8RelPath))]
+[System.Text.Json.Serialization.JsonConverter(typeof(SystemConverter.Utf8RelPath))]
 public readonly struct Utf8RelPath : IEquatable<Utf8RelPath>, IComparable<Utf8RelPath>, IDisposable
 {
     /// <inheritdoc cref="Utf8GamePath.MaxGamePathLength"/>
@@ -43,7 +42,7 @@ public readonly struct Utf8RelPath : IEquatable<Utf8RelPath>, IComparable<Utf8Re
         if (substring.Length > MaxRelPathLength)
             return false;
 
-        if (substring.Length == 0)
+        if (substring.Length is 0)
             return true;
 
         if (!ByteString.FromString(substring, out var ascii, true))
@@ -118,28 +117,4 @@ public readonly struct Utf8RelPath : IEquatable<Utf8RelPath>, IComparable<Utf8Re
     /// <inheritdoc cref="ByteString.Dispose"/>
     public void Dispose()
         => Path.Dispose();
-
-    /// <inheritdoc cref="Utf8GamePath.Utf8GamePathConverter"/>
-    private class Utf8RelPathConverter : JsonConverter
-    {
-        public override bool CanConvert(Type objectType)
-            => objectType == typeof(Utf8RelPath);
-
-        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
-        {
-            var token = JToken.Load(reader).ToString();
-            return FromString(token, out var p)
-                ? p
-                : throw new JsonException($"Could not convert \"{token}\" to {nameof(Utf8RelPath)}.");
-        }
-
-        public override bool CanWrite
-            => true;
-
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            if (value is Utf8RelPath p)
-                serializer.Serialize(writer, p.ToString());
-        }
-    }
 }

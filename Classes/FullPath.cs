@@ -1,5 +1,3 @@
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Penumbra.String.Functions;
 
 namespace Penumbra.String.Classes;
@@ -9,7 +7,8 @@ namespace Penumbra.String.Classes;
 /// and a lower-case ByteString for FFXIV interactions.
 /// Also stores the FFXIV-CRC64 value.
 /// </summary>
-[JsonConverter(typeof(FullPathConverter))]
+[Newtonsoft.Json.JsonConverter(typeof(NewtonsoftConverter.FullPath))]
+[System.Text.Json.Serialization.JsonConverter(typeof(SystemConverter.FullPath))]
 public struct FullPath : IComparable, IEquatable<FullPath>
 {
     /// <summary> The Unicode string containing the full name of the path with backward-slashes. </summary>
@@ -18,12 +17,10 @@ public struct FullPath : IComparable, IEquatable<FullPath>
     /// <summary> The UTF8 string containing the full name of the path with forward-slashes. </summary>
     public readonly CiByteString InternalName;
 
-    private ulong _crc64;
-
     /// <summary> The FFXIV specific Crc64 value, i.e. a CRC32 of the file name combined with a CRC32 of the file path. </summary>
     /// <remarks> This value is cached after the first computation. </remarks>
     public ulong Crc64
-        => _crc64 == 0 && !InternalName.IsEmpty ? (_crc64 = ByteStringFunctions.ComputeLowerCaseCrc64(InternalName)) : _crc64;
+        => field is 0 && !InternalName.IsEmpty ? field = ByteStringFunctions.ComputeLowerCaseCrc64(InternalName) : field;
 
     /// <summary> An empty string. </summary>
     public static readonly FullPath Empty = new(string.Empty);
@@ -108,7 +105,7 @@ public struct FullPath : IComparable, IEquatable<FullPath>
     /// <summary> Check if two FullPaths are equal. </summary>
     public bool Equals(FullPath other)
     {
-        if (FullName.Length == 0 || other.FullName.Length == 0)
+        if (FullName.Length is 0 || other.FullName.Length is 0)
             return true;
 
         return InternalName.Equals(other.InternalName);
@@ -129,28 +126,4 @@ public struct FullPath : IComparable, IEquatable<FullPath>
     /// <summary> Return the path with back slashes if it is rooted and with forward-slashes if not. </summary>
     public string ToPath()
         => IsRooted ? FullName : FullName.Replace("\\", "/");
-
-    /// <summary>
-    /// Convert from and to string.
-    /// </summary>
-    private class FullPathConverter : JsonConverter
-    {
-        public override bool CanConvert(Type objectType)
-            => objectType == typeof(FullPath);
-
-        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
-        {
-            var token = JToken.Load(reader).ToString();
-            return new FullPath(token);
-        }
-
-        public override bool CanWrite
-            => true;
-
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            if (value is FullPath p)
-                serializer.Serialize(writer, p.ToString());
-        }
-    }
 }
